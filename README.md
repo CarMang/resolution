@@ -1,5 +1,5 @@
 # Resolution
-This program allows one to commit a resolution on LLM-only web accessing.
+This program allows developers to commit a resolution on LLM-only web accessing.
 
 ## How It Works
 
