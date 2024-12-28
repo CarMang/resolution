@@ -94,6 +94,8 @@ pub fn main() !void {
             ".github.com", // All subdomains of github.com
             "www.chat.com",
             ".chat.com", // ChatGPT
+            "www.chatgpt.com",
+            ".chatgpt.com",
             "www.deepseek.com", // DeepSeek
             ".deepseek.com",
         },
