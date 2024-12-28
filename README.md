@@ -1,28 +1,59 @@
-This version:
+# Resolution
+This program allows one to commit a resolution on LLM-only web accessing.
 
-1. Focuses specifically on macOS using PF (Packet Filter)
-2. Removes the proxy approach in favor of direct packet filtering
-3. Creates a simple domain allowlist system
-4. Uses proper firewall rules to block/allow traffic
+## How It Works
 
-- Removed the cross-platform code since you only need macOS support
-- Removed the proxy setup in favor of direct packet filtering
-- Added a proper domain allowlist structure
-- Fixed the compiler error by removing the `os.isUnix` check
+The program uses the `pfctl` (Packet Filter control) utility on Unix-like systems to enforce firewall rules. It blocks all outgoing traffic on ports 80 (HTTP) and 443 (HTTPS) except for the domains explicitly allowed in the configuration.
 
-To use this program:
+### Key Features:
+- **Domain Whitelisting**: You can specify exact domains (e.g., `www.github.com`) or wildcard domains (e.g., `.github.com` to allow all subdomains).
+- **Dynamic Rule Application**: The program dynamically generates and applies the firewall rules based on the allowed domains.
+- **Graceful Shutdown**: The program runs continuously until interrupted (e.g., by pressing `CTRL+C`), at which point it shuts down gracefully.
 
-1. Add your allowed domains to the `allowed_domains` list in the `main` function
-2. Run it with sudo (required for PF access): `sudo zig run main.zig`
+## Usage
 
-Important notes:
-1. The program needs root privileges to modify PF rules
-2. It will block all HTTP/HTTPS traffic except to the specified domains
-3. The program keeps running to maintain the rules (you can modify this behavior if you want)
+1. **Compile the Program**:
+   Ensure you have Zig installed, then compile the program using the following command:
+   ```bash
+   sudo zig build run
+   ```
 
-To make this work effectively:
-1. Make sure PF is enabled on your Mac
-2. You might need to temporarily disable any other firewall software
-3. The domains must be exact matches
+3. **Interrupt the Program**:
+   To stop the program, press `CTRL+C`. The program will shut down gracefully, and the firewall rules will remain in place until manually reset.
 
-Would you like me to add any specific features or modify the behavior in any way?
+## Configuration
+
+The list of allowed domains is defined in the `main` function within the `AllowedDomains` struct. You can modify this list to include or exclude specific domains as needed.
+
+```zig
+const allowed_domains = AllowedDomains{
+    .domains = &[_][]const u8{
+        "claude.ai", // Exact match for claude.ai
+        ".claude.ai", // Matches all subdomains of claude.ai
+        "www.github.com",
+        ".github.com", // All subdomains of github.com
+        "www.chat.com",
+        ".chat.com", // ChatGPT
+        "www.deepseek.com", // DeepSeek
+        ".deepseek.com",
+    },
+};
+```
+
+## Dependencies
+
+- **Zig**: The program is written in Zig, so you need the Zig compiler to build it.
+- **pfctl**: The program relies on the `pfctl` utility, which is typically available on Unix-like systems (e.g., macOS, FreeBSD).
+
+## Notes
+
+- **Root Privileges**: Running this program may require root privileges to modify firewall rules.
+- **Persistence**: The firewall rules applied by this program are not persistent across reboots. You would need to run the program again after a system restart.
+
+## License
+
+This program is open-source and available under the MIT License. Feel free to modify and distribute it as needed.
+
+---
+
+This program is a simple yet effective way to control network traffic, especially for users who want to restrict access to specific domains while using LLMs or other services.

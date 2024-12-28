@@ -1,6 +1,7 @@
 const std = @import("std");
 const Child = std.process.Child;
 const fs = std.fs;
+const os = std.os;
 
 const AllowedDomains = struct {
     domains: []const []const u8,
@@ -26,7 +27,6 @@ fn setupPfRules(allowed_domains: AllowedDomains, allocator: std.mem.Allocator) !
         var disable_cmd = Child.init(&[_][]const u8{ "pfctl", "-d" }, allocator);
         _ = try disable_cmd.spawnAndWait();
     }
-
     // Enable PF
     {
         var enable_cmd = Child.init(&[_][]const u8{ "pfctl", "-e" }, allocator);
@@ -75,23 +75,56 @@ fn setupPfRules(allowed_domains: AllowedDomains, allocator: std.mem.Allocator) !
     }
 }
 
+fn killPfctl(allocator: std.mem.Allocator) !void {
+    var disable_cmd = Child.init(&[_][]const u8{ "pfctl", "-d" }, allocator);
+    const term = try disable_cmd.spawnAndWait();
+
+    if (term != .Exited or term.Exited != 0) {
+        std.debug.print("pfctl failed to disable\n", .{});
+        return error.PfctlFailed;
+    }
+}
+
 pub fn main() !void {
     const allowed_domains = AllowedDomains{
         .domains = &[_][]const u8{
             "claude.ai", // Exact match for claude.ai
             ".claude.ai", // Matches all subdomains of claude.ai
+            "www.github.com",
             ".github.com", // All subdomains of github.com
-            ".chat.com", // ChatGPT
             "www.chat.com",
-            ".deepseek.com", // DeepSeek
+            ".chat.com", // ChatGPT
+            "www.deepseek.com", // DeepSeek
+            ".deepseek.com",
         },
     };
 
     try setupPfRules(allowed_domains, std.heap.page_allocator);
     std.debug.print("Traffic blocking enabled. Only allowed domains can be accessed.\n", .{});
 
-    // Keep the program running
-    while (true) {
+    // Set up signal handling for SIGINT (CTRL+C)
+    const act = std.posix.Sigaction{
+        .handler = .{ .handler = handleSignal },
+        .mask = std.posix.empty_sigset,
+        .flags = 0,
+    };
+    try std.posix.sigaction(std.posix.SIG.INT, &act, null);
+
+    // Keep the program running until interrupted
+    while (!should_exit) {
         std.time.sleep(std.time.ns_per_s);
+    }
+
+    try killPfctl(std.heap.page_allocator);
+    std.debug.print("Shutting down gracefully...\n", .{});
+}
+
+// Global flag to indicate if the program should exit
+var should_exit: bool = false;
+
+// Signal handler function
+fn handleSignal(sig: c_int) callconv(.C) void {
+    if (sig == std.posix.SIG.INT) {
+        should_exit = true;
     }
 }

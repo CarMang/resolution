@@ -8,7 +8,7 @@ pub fn build(b: *std.Build) void {
     // Create an executable for the proxy server
     const exe = b.addExecutable(.{
         .name = "proxy-server",
-        .root_source_file = b.path("src/main2.zig"),
+        .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
     });
