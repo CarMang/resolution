@@ -81,9 +81,10 @@ pub fn main() !void {
         .domains = &[_][]const u8{
             "claude.ai", // Exact match for claude.ai
             ".claude.ai", // Matches all subdomains of claude.ai
+            "www.github.com",
             ".github.com", // All subdomains of github.com
-            ".chat.com", // ChatGPT
             "www.chat.com",
+            ".chat.com", // ChatGPT
             "www.deepseek.com", // DeepSeek
             ".deepseek.com",
         },
